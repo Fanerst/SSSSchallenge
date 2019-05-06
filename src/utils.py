@@ -25,7 +25,7 @@ def readgraph(D):
 def energy_ising(sample, J, D):
     batch = sample.shape[0]
     J = J.to_sparse()
-    energy = - torch.bmm(sample.view(batch, 1, D),
+    energy = -torch.bmm(sample.view(batch, 1, D),
             torch.sparse.mm(J, sample.t()).t().view(batch, D, 1)).reshape(batch) / 2
 
     return energy
