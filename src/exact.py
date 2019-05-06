@@ -47,5 +47,8 @@ def exact_Z(D, beta, device):
 
 
 if __name__ == '__main__':
-    Z = exact_Z(60, 1, 'cpu')
-    print(Z)
+    D = 60
+    beta = 1
+    device = 'cpu'
+    Z = exact_Z(D, beta, device)
+    print(Z/D)
