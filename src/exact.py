@@ -1,4 +1,5 @@
 import torch
+import time
 import numpy as np
 import networkx as nx
 from utils import readgraph, sum_up_tree, energy_ising
@@ -15,7 +16,7 @@ def exact_config(D):
     return config
 
 
-def exact_Z(D, beta, device):
+def exact_logZ(D, beta, device):
     num_edges, edges, _, J = readgraph(D)
 
     J = torch.from_numpy(J).to(device)
@@ -37,18 +38,21 @@ def exact_Z(D, beta, device):
         tree_hierarchy.append(current_line)
 
     l = len(FVS)
+    start_time = time.time()
     sample = torch.from_numpy(exact_config(l) * 2.0 - 1.0).to(device)
     fe_tree = sum_up_tree(sample, J, FVS, tree1, tree_hierarchy,
                           sample.shape[0], beta, device)
     energy = energy_ising(sample, J[FVS][:, FVS], l) + fe_tree
     partition_function = torch.sum(torch.exp(-beta * energy))
+    times = time.time() - start_time
 
-    return partition_function
+    return torch.log(partition_function).numpy()/D, times
 
 
 if __name__ == '__main__':
     D = 60
     beta = 1
     device = 'cpu'
-    Z = exact_Z(D, beta, device)
-    print(Z/D)
+    logZ, times = exact_Z(D, beta, device)
+    print(logZ, times)
+
