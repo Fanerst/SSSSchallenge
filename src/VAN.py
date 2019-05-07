@@ -116,7 +116,7 @@ def VAN(args):
         mask = torch.from_numpy(
             np.loadtxt('../data' + args.method + 'adj{}nodes.txt'.format(args.D))
         ).float()
-    elif args.method == 'fully_connected':
+    elif args.method == 'dense':
         n = args.D
         mask = (torch.ones([n] * 2) - torch.eye(n)).float()
     else:
