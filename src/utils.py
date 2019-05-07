@@ -1,6 +1,12 @@
 import numpy as np
 import torch
+from collections import namedtuple
 
+def get_args(method, nd, nw, beta, device='cpu'):
+    args = namedtuple('args', ['dtype', 'D', 'method', 'device', 'num_epochs',
+        'sample', 'calc', 'beta', 'net_depth', 'net_width'])
+
+    return args('float64', 60, method, device, 5000, 10000, 100000, beta, nd, nw)
 
 def readgraph(D):
     with open('../data/{}nodes.txt'.format(D), 'r') as f:
