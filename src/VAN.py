@@ -170,7 +170,7 @@ def VAN(args):
     # sampling
     sample = torch.zeros([sample_size, n], device=args.device, dtype=dtype)
     with torch.no_grad():
-        for i in range(args.n):
+        for i in range(n):
             if not isinstance(i, list):
                 i = [i]
             xhat = model.sample(sample, i)
@@ -192,5 +192,5 @@ def VAN(args):
 
     times = time.time() - start_time
 
-    return -free_energy / args.D, times
+    return -free_energy / args.D, times, sample
 
