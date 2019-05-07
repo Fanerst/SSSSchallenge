@@ -192,5 +192,20 @@ def VAN(args):
 
     times = time.time() - start_time
 
-    return -free_energy / args.D, times, sample
+    # count config
+    sample_list = sample.tolist()
+    energy_list = energy0.tolist()
+    config = []
+    nums = []
+    energy = []
+    for i in range(len(sample_list)):
+        if sample_list[i] not in config:
+            config.append(sample_list[i])
+            energy.append(energy_list[i])
+            nums.append(1)
+        else:
+            index = config.index(sample_list[i])
+            nums[index] += 1
+
+    return -free_energy / args.D, times, config, energy_list, nums
 
