@@ -2,11 +2,14 @@ import numpy as np
 import torch
 from collections import namedtuple
 
+
 def get_args(method, nd, nw, beta, device='cpu'):
     args = namedtuple('args', ['dtype', 'D', 'method', 'device', 'num_epochs',
-        'sample', 'calc', 'beta', 'net_depth', 'net_width'])
+                               'sample', 'calc', 'beta', 'net_depth', 'net_width',
+                               'beta_inc', 'beta_to'])
 
-    return args('float64', 60, method, device, 5000, 10000, 100000, beta, nd, nw)
+    return args('float64', 60, method, device, 5000, 10000, 100000, 1, nd, nw, 1, beta)
+
 
 def readgraph(D):
     with open('../data/{}nodes.txt'.format(D), 'r') as f:
@@ -32,7 +35,7 @@ def energy_ising(sample, J, D):
     batch = sample.shape[0]
     J = J.to_sparse()
     energy = -torch.bmm(sample.view(batch, 1, D),
-            torch.sparse.mm(J, sample.t()).t().view(batch, D, 1)).reshape(batch) / 2
+                        torch.sparse.mm(J, sample.t()).t().view(batch, D, 1)).reshape(batch) / 2
 
     return energy
 
