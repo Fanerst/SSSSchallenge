@@ -119,7 +119,7 @@ def FVS_decomposition(G, rng):
 
 
 if __name__ == '__main__':
-    adj = np.loadtxt('../data/buckyball.txt')
+    adj = np.loadtxt('../data/adj60nodes.txt')
     G = nx.from_numpy_matrix(adj)
     rng = np.random.RandomState(78825)
     save_graph(G)
