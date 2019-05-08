@@ -2,7 +2,7 @@ import torch
 import time
 import numpy as np
 from torch import nn, optim
-from utils import energy_ising, erg_ising_exact, sum_up_tree
+from utils import energy_ising, sum_up_tree
 
 
 class MaskedLinear(nn.Linear):
@@ -97,8 +97,8 @@ def VAN(args):
 
     if args.method == 'FVS':
         # read the FVS nodes and tree hierarchy
-        FVS = np.loadtxt('../data' + 'fvs{}nodes.txt'.format(D)).astype(np.int)
-        with open('../data' + 'trees{}nodes.txt'.format(D)) as f:
+        FVS = np.loadtxt('../data/' + 'fvs{}nodes.txt'.format(args.D)).astype(np.int)
+        with open('../data/' + 'trees{}nodes.txt'.format(args.D)) as f:
             list1 = f.readlines()
         f.close()
         tree = []
@@ -109,12 +109,12 @@ def VAN(args):
             tree_hierarchy.append(current_line)
         n = len(FVS)
         mask = torch.from_numpy(
-            np.loadtxt('../data' + args.method + 'adj{}nodes.txt'.format(args.D))
+            np.loadtxt('../data/' + args.method + 'adj{}nodes.txt'.format(args.D))
         ).float()
     elif args.method == 'chordal':
         n = args.D
         mask = torch.from_numpy(
-            np.loadtxt('../data' + args.method + 'adj{}nodes.txt'.format(args.D))
+            np.loadtxt('../data/' + args.method + 'adj{}nodes.txt'.format(args.D))
         ).float()
     elif args.method == 'dense':
         n = args.D
@@ -122,12 +122,13 @@ def VAN(args):
     else:
         raise Exception('Unknown method.')
 
-    model = MADE(args.n, args.net_depth, args.net_width, mask).to(dtype).to(args.device)
-    opt = optim.Adam(model.parameters(), lr=args.lr)
+    model = MADE(n, args.net_depth, args.net_width, mask).to(dtype).to(args.device)
+    opt = optim.Adam(model.parameters(), lr=1e-3)
 
     start_time = time.time()
 
     # run epoch
+    torch.set_grad_enabled(True)
     for epoch in range(args.num_epochs):
         sample_size = args.sample
 
@@ -148,12 +149,12 @@ def VAN(args):
                                       sample_size, args.beta, args.device)
 
         # calculate entropy, energy, free energy and loss
-        energy0 = energy_ising(sample, J[FVS][:, FVS], n, args.device) + energy_tree \
-            if args.method == 'FVS' else energy_ising(sample, J, n, args.device)
         entropy = - (torch.log(xhat + 1e-10) * (sample + 1) + torch.log(1 - xhat + 1e-10) * (1 - sample)) / 2
         entropy = torch.sum(entropy, dim=1)
 
         with torch.no_grad():
+            energy0 = energy_ising(sample, J[FVS][:, FVS], n) + energy_tree \
+                if args.method == 'FVS' else energy_ising(sample, J, n)
             free_energy = - entropy / args.beta + energy0
 
         loss = torch.mean(- entropy * (free_energy - free_energy.mean()))
@@ -182,13 +183,11 @@ def VAN(args):
         energy_tree = sum_up_tree(sample, J, FVS, tree, tree_hierarchy,
                                   sample_size, args.beta, args.device)
 
-    energy0 = energy_ising(sample, J[FVS][:, FVS], n, args.device) + energy_tree \
-        if args.method == 'FVS' else energy_ising(sample, J, n, args.device)
+    energy0 = energy_ising(sample, J[FVS][:, FVS], n) + energy_tree \
+        if args.method == 'FVS' else energy_ising(sample, J, n)
     entropy = - (torch.log(xhat + 1e-10) * (sample + 1) + torch.log(1 - xhat + 1e-10) * (1 - sample)) / 2
     entropy = torch.sum(entropy, dim=1)
-
-    with torch.no_grad():
-        free_energy = - entropy / args.beta + energy0
+    free_energy = - entropy / args.beta + energy0
 
     times = time.time() - start_time
 
@@ -207,5 +206,5 @@ def VAN(args):
             index = config.index(sample_list[i])
             nums[index] += 1
 
-    return -free_energy / args.D, times, config, energy_list, nums
+    return -free_energy.mean().cpu().numpy()/args.D, times, config, energy, nums
 
