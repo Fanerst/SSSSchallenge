@@ -46,7 +46,7 @@ def exact_logZ(D, beta, device):
     partition_function = torch.sum(torch.exp(-beta * energy))
     times = time.time() - start_time
 
-    return torch.log(partition_function).numpy()/D, times
+    return torch.log(partition_function).cpu().numpy()/D, times
 
 
 if __name__ == '__main__':
