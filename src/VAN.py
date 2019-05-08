@@ -129,40 +129,43 @@ def VAN(args):
 
     # run epoch
     torch.set_grad_enabled(True)
-    for epoch in range(args.num_epochs):
-        sample_size = args.sample
+    beta = args.beta
+    while beta <= args.beta_to:
+        for epoch in range(args.num_epochs):
+            sample_size = args.sample
 
-        # sampling
-        sample = torch.zeros([sample_size, n], device=args.device, dtype=dtype)
-        with torch.no_grad():
-            for i in range(n):
-                if not isinstance(i, list):
-                    i = [i]
-                xhat = model.sample(sample, i)
-                sample[:, i] = torch.bernoulli(xhat) * 2 - 1
+            # sampling
+            sample = torch.zeros([sample_size, n], device=args.device, dtype=dtype)
+            with torch.no_grad():
+                for i in range(n):
+                    if not isinstance(i, list):
+                        i = [i]
+                    xhat = model.sample(sample, i)
+                    sample[:, i] = torch.bernoulli(xhat) * 2 - 1
 
-        xhat = model(sample)
+            xhat = model(sample)
 
-        # calculate effective energy of tree nodes
-        if args.method == 'FVS':
-            energy_tree = sum_up_tree(sample, J, FVS, tree, tree_hierarchy,
-                                      sample_size, args.beta, args.device)
+            # calculate effective energy of tree nodes
+            if args.method == 'FVS':
+                energy_tree = sum_up_tree(sample, J, FVS, tree, tree_hierarchy,
+                                          sample_size, beta, args.device)
 
-        # calculate entropy, energy, free energy and loss
-        entropy = - (torch.log(xhat + 1e-10) * (sample + 1) + torch.log(1 - xhat + 1e-10) * (1 - sample)) / 2
-        entropy = torch.sum(entropy, dim=1)
+            # calculate entropy, energy, free energy and loss
+            entropy = - (torch.log(xhat + 1e-10) * (sample + 1) + torch.log(1 - xhat + 1e-10) * (1 - sample)) / 2
+            entropy = torch.sum(entropy, dim=1)
 
-        with torch.no_grad():
-            energy0 = energy_ising(sample, J[FVS][:, FVS], n) + energy_tree \
-                if args.method == 'FVS' else energy_ising(sample, J, n)
-            free_energy = - entropy / args.beta + energy0
+            with torch.no_grad():
+                energy0 = energy_ising(sample, J[FVS][:, FVS], n) + energy_tree \
+                    if args.method == 'FVS' else energy_ising(sample, J, n)
+                free_energy = - entropy / beta + energy0
 
-        loss = torch.mean(- entropy * (free_energy - free_energy.mean()))
+            loss = torch.mean(- entropy * (free_energy - free_energy.mean()))
 
-        # backprop ang update
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
+            # backprop ang update
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+        beta += args.beta_inc
 
     # calculate quantities use bigger sample size(calc_number)
     torch.set_grad_enabled(False)
@@ -181,13 +184,13 @@ def VAN(args):
 
     if args.method == 'FVS':
         energy_tree = sum_up_tree(sample, J, FVS, tree, tree_hierarchy,
-                                  sample_size, args.beta, args.device)
+                                  sample_size, args.beta_to, args.device)
 
     energy0 = energy_ising(sample, J[FVS][:, FVS], n) + energy_tree \
         if args.method == 'FVS' else energy_ising(sample, J, n)
     entropy = - (torch.log(xhat + 1e-10) * (sample + 1) + torch.log(1 - xhat + 1e-10) * (1 - sample)) / 2
     entropy = torch.sum(entropy, dim=1)
-    free_energy = - entropy / args.beta + energy0
+    free_energy = - entropy / args.beta_to + energy0
 
     times = time.time() - start_time
 
@@ -206,5 +209,5 @@ def VAN(args):
             index = config.index(sample_list[i])
             nums[index] += 1
 
-    return -free_energy.mean().cpu().numpy()/args.D, times, config, energy, nums
+    return -free_energy.mean().cpu().numpy()/args.D, entropy.mean().cpu().numpy(), times, config, energy, nums
 
