@@ -26,7 +26,7 @@ The third approach is by running Variational Autoregressive Networks(VAN) on the
 
 ## Question 2
 
-We firstly find many ground states by VAN, over 15000 of them, and then analyze patterns of these ground states.
+From the begining, we used VAN to find ground states(there are tons of methods to do the same task, like simulated annealing), collected over 15000 of them, and then analyzed their patterns.
 
 After brainstorming, we found two ways to solve it. The story is long, maybe we will update it later.
 
