@@ -1,5 +1,6 @@
 from itertools import combinations
 import numpy as np
+import time
 
 with open('../data/12nodes.txt') as f:
     list1 = f.readlines()
@@ -10,6 +11,7 @@ for i in range(len(list1)):
         a, b = list1[i].split()
         edges.append([int(a), int(b)])
 
+start_time = time.time()
 combines = list(combinations(edges, 6))
 
 list1 = []
@@ -22,4 +24,6 @@ for i in range(len(combines)):
         nums += 1
     list1 = []
 
-print(nums*2*2**6)
+times = time.time() - start_time
+
+print(nums*2*2**6, times)
